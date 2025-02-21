@@ -1,0 +1,125 @@
+SERVER CODE 
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <mutex>
+#include <netinet/in.h>
+#include <unistd.h>
+
+using namespace std;
+
+vector<int> clients;
+mutex clientMutex;
+
+void handleClient(int clientSocket) {
+    char buffer[1024];
+    while (true) {
+        ssize_t bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+        if (bytesReceived <= 0) {
+            cerr << "Client disconnected." << endl;
+            close(clientSocket);
+            break;
+        }
+
+        buffer[bytesReceived] = '\0';
+        cout << "Received: " << buffer << endl;
+
+        // Broadcast message to other clients
+        lock_guard<mutex> lock(clientMutex);
+        for (int client : clients) {
+            if (client != clientSocket) {
+                send(client, buffer, bytesReceived, 0);
+            }
+        }
+    }
+}
+
+int main() {
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == -1) {
+        cerr << "Failed to create socket." << endl;
+        return -1;
+    }
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(8080);
+
+    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        cerr << "Bind failed." << endl;
+        return -1;
+    }
+
+    listen(serverSocket, 5);
+    cout << "Server listening on port 8080..." << endl;
+
+    while (true) {
+        int clientSocket = accept(serverSocket, nullptr, nullptr);
+        if (clientSocket < 0) {
+            cerr << "Failed to accept connection." << endl;
+            continue;
+        }
+
+        {
+            lock_guard<mutex> lock(clientMutex);
+            clients.push_back(clientSocket);
+        }
+
+        thread(handleClient, clientSocket).detach();
+    }
+
+    close(serverSocket);
+    return 0;
+}
+CLIENT CODE      
+#include <iostream>
+#include <thread>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <cstring>
+
+using namespace std;
+
+void receiveMessages(int socket) {
+    char buffer[1024];
+    while (true) {
+        ssize_t bytesReceived = recv(socket, buffer, sizeof(buffer), 0);
+        if (bytesReceived > 0) {
+            buffer[bytesReceived] = '\0';
+            cout << "\n[Server]: " << buffer << endl;
+        }
+    }
+}
+
+int main() {
+    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientSocket == -1) {
+        cerr << "Failed to create socket." << endl;
+        return -1;
+    }
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(8080);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        cerr << "Connection failed." << endl;
+        return -1;
+    }
+
+    cout << "Connected to server." << endl;
+
+    thread(receiveMessages, clientSocket).detach();
+
+    while (true) {
+        string message;
+        getline(cin, message);
+        send(clientSocket, message.c_str(), message.size(), 0);
+    }
+
+    close(clientSocket);
+    return 0;
+}
+
