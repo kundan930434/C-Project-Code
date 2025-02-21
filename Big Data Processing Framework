@@ -1,0 +1,80 @@
+#include <iostream>
+#include <fstream>
+#include <thread>
+#include <vector>
+#include <unordered_map>
+#include <mutex>
+
+using namespace std;
+
+mutex dataMutex;
+unordered_map<string, int> wordCount;
+
+// Map function to count words in a chunk of data
+void mapFunction(const vector<string>& dataChunk) {
+    unordered_map<string, int> localCount;
+
+    for (const string& word : dataChunk) {
+        localCount[word]++;
+    }
+
+    // Merge local counts into global word count
+    lock_guard<mutex> lock(dataMutex);
+    for (const auto& pair : localCount) {
+        wordCount[pair.first] += pair.second;
+    }
+}
+
+// Split data into chunks for parallel processing
+vector<vector<string>> splitData(const vector<string>& data, int numChunks) {
+    vector<vector<string>> chunks(numChunks);
+    for (size_t i = 0; i < data.size(); ++i) {
+        chunks[i % numChunks].push_back(data[i]);
+    }
+    return chunks;
+}
+
+// Read input data from a file
+vector<string> readData(const string& filename) {
+    ifstream file(filename);
+    vector<string> words;
+    string word;
+    
+    while (file >> word) {
+        words.push_back(word);
+    }
+    return words;
+}
+
+// Reduce function to display results
+void reduceFunction() {
+    for (const auto& pair : wordCount) {
+        cout << pair.first << ": " << pair.second << endl;
+    }
+}
+
+int main() {
+    string filename = "large_text_file.txt";
+    vector<string> data = readData(filename);
+
+    int numThreads = thread::hardware_concurrency();
+    vector<thread> threads;
+
+    // Split data for parallel processing
+    vector<vector<string>> chunks = splitData(data, numThreads);
+
+    // Start threads to process data in parallel
+    for (int i = 0; i < numThreads; ++i) {
+        threads.emplace_back(mapFunction, chunks[i]);
+    }
+
+    // Join all threads
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    // Reduce phase: Display word counts
+    reduceFunction();
+
+    return 0;
+}
