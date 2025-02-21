@@ -1,0 +1,71 @@
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+// Function to count nucleotides
+unordered_map<char, int> countNucleotides(const string& sequence) {
+    unordered_map<char, int> count{{'A', 0}, {'T', 0}, {'C', 0}, {'G', 0}};
+
+    for (char nucleotide : sequence) {
+        if (count.find(nucleotide) != count.end()) {
+            count[nucleotide]++;
+        }
+    }
+
+    return count;
+}
+
+// Function to calculate GC content percentage
+double calculateGCContent(const string& sequence) {
+    int gcCount = 0;
+
+    for (char nucleotide : sequence) {
+        if (nucleotide == 'G' || nucleotide == 'C') {
+            gcCount++;
+        }
+    }
+
+    return (double)gcCount / sequence.length() * 100;
+}
+
+// Function to search for a motif
+vector<int> findMotif(const string& sequence, const string& motif) {
+    vector<int> positions;
+    size_t pos = sequence.find(motif);
+
+    while (pos != string::npos) {
+        positions.push_back(pos + 1);  // Positions are 1-based
+        pos = sequence.find(motif, pos + 1);
+    }
+
+    return positions;
+}
+
+int main() {
+    string dnaSequence = "ATGCGATCGATCGATCGCTAGCTAGCATCGATCGA";
+    string motif = "ATC";
+
+    // Nucleotide counting
+    auto nucleotideCounts = countNucleotides(dnaSequence);
+    cout << "Nucleotide Counts:\n";
+    for (const auto& pair : nucleotideCounts) {
+        cout << pair.first << ": " << pair.second << endl;
+    }
+
+    // GC content
+    double gcContent = calculateGCContent(dnaSequence);
+    cout << "\nGC Content: " << gcContent << "%" << endl;
+
+    // Motif search
+    vector<int> motifPositions = findMotif(dnaSequence, motif);
+    cout << "\nMotif '" << motif << "' found at positions: ";
+    for (int pos : motifPositions) {
+        cout << pos << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
