@@ -1,0 +1,73 @@
+#include <iostream>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+// Class representing an IoT device
+class IoTDevice {
+private:
+    string id;
+    bool status;  // true = ON, false = OFF
+
+public:
+    IoTDevice(const string& deviceId) : id(deviceId), status(false) {}
+
+    void turnOn() {
+        status = true;
+        cout << "Device " << id << " turned ON." << endl;
+    }
+
+    void turnOff() {
+        status = false;
+        cout << "Device " << id << " turned OFF." << endl;
+    }
+
+    void getStatus() const {
+        cout << "Device " << id << " is " << (status ? "ON" : "OFF") << endl;
+    }
+};
+
+// Controller for managing IoT devices
+class IoTController {
+private:
+    unordered_map<string, IoTDevice> devices;
+
+public:
+    void addDevice(const string& deviceId) {
+        devices.emplace(deviceId, IoTDevice(deviceId));
+        cout << "Device " << deviceId << " added to the controller." << endl;
+    }
+
+    void sendCommand(const string& deviceId, const string& command) {
+        if (devices.find(deviceId) != devices.end()) {
+            if (command == "ON") {
+                devices[deviceId].turnOn();
+            } else if (command == "OFF") {
+                devices[deviceId].turnOff();
+            } else if (command == "STATUS") {
+                devices[deviceId].getStatus();
+            } else {
+                cout << "Invalid command!" << endl;
+            }
+        } else {
+            cout << "Device not found!" << endl;
+        }
+    }
+};
+
+int main() {
+    IoTController controller;
+
+    controller.addDevice("Light_1");
+    controller.addDevice("Fan_1");
+
+    // Sending commands to devices
+    controller.sendCommand("Light_1", "ON");
+    controller.sendCommand("Fan_1", "ON");
+    controller.sendCommand("Light_1", "STATUS");
+    controller.sendCommand("Fan_1", "OFF");
+    controller.sendCommand("Fan_1", "STATUS");
+
+    return 0;
+}
