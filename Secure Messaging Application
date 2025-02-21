@@ -1,0 +1,126 @@
+#include <iostream>
+#include <cstring>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+// AES Encryption/Decryption functions
+void handleErrors() {
+    ERR_print_errors_fp(stderr);
+    abort();
+}
+
+int encrypt(unsigned char* plaintext, int plaintext_len, unsigned char* key,
+            unsigned char* iv, unsigned char* ciphertext) {
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) handleErrors();
+
+    int len, ciphertext_len;
+    if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+        handleErrors();
+
+    if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+        handleErrors();
+    ciphertext_len = len;
+
+    if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) handleErrors();
+    ciphertext_len += len;
+
+    EVP_CIPHER_CTX_free(ctx);
+    return ciphertext_len;
+}
+
+int decrypt(unsigned char* ciphertext, int ciphertext_len, unsigned char* key,
+            unsigned char* iv, unsigned char* plaintext) {
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) handleErrors();
+
+    int len, plaintext_len;
+    if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+        handleErrors();
+
+    if (1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+        handleErrors();
+    plaintext_len = len;
+
+    if (1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) handleErrors();
+    plaintext_len += len;
+
+    EVP_CIPHER_CTX_free(ctx);
+    return plaintext_len;
+}
+
+// Secure Server
+void runServer(unsigned char* key, unsigned char* iv) {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    bind(server_fd, (struct sockaddr*)&address, sizeof(address));
+    listen(server_fd, 3);
+    new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
+
+    int valread = read(new_socket, buffer, BUFFER_SIZE);
+    unsigned char decrypted[BUFFER_SIZE];
+    int decrypted_len = decrypt((unsigned char*)buffer, valread, key, iv, decrypted);
+    decrypted[decrypted_len] = '\0';
+    std::cout << "Decrypted Message: " << decrypted << std::endl;
+
+    close(new_socket);
+    close(server_fd);
+}
+
+// Secure Client
+void runClient(unsigned char* key, unsigned char* iv) {
+    int sock = 0;
+    struct sockaddr_in serv_addr;
+    char message[BUFFER_SIZE] = "Hello Secure World!";
+    unsigned char encrypted[BUFFER_SIZE];
+
+    int encrypted_len = encrypt((unsigned char*)message, strlen(message), key, iv, encrypted);
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+
+    inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
+    connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+
+    send(sock, encrypted, encrypted_len, 0);
+    close(sock);
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <server/client>\n";
+        return 1;
+    }
+
+    unsigned char key[32];
+    unsigned char iv[16];
+    RAND_bytes(key, sizeof(key));
+    RAND_bytes(iv, sizeof(iv));
+
+    if (std::string(argv[1]) == "server") {
+        runServer(key, iv);
+    } else if (std::string(argv[1]) == "client") {
+        runClient(key, iv);
+    } else {
+        std::cerr << "Invalid argument. Use 'server' or 'client'.\n";
+        return 1;
+    }
+
+    return 0;
+}
