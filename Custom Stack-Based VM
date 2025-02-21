@@ -1,0 +1,89 @@
+#include <iostream>
+#include <vector>
+#include <stdexcept>
+
+enum Instruction {
+    PUSH,
+    POP,
+    ADD,
+    SUB,
+    HALT
+};
+
+class StackVM {
+private:
+    std::vector<int> stack;
+    size_t maxSize;
+
+public:
+    StackVM(size_t size = 256) : maxSize(size) {}
+
+    void push(int value) {
+        if (stack.size() >= maxSize) {
+            throw std::overflow_error("Stack overflow!");
+        }
+        stack.push_back(value);
+    }
+
+    int pop() {
+        if (stack.empty()) {
+            throw std::underflow_error("Stack underflow!");
+        }
+        int value = stack.back();
+        stack.pop_back();
+        return value;
+    }
+
+    void execute(const std::vector<int>& program) {
+        size_t pc = 0; // Program counter
+        while (pc < program.size()) {
+            Instruction instr = static_cast<Instruction>(program[pc++]);
+            switch (instr) {
+                case PUSH:
+                    push(program[pc++]);
+                    break;
+                case POP:
+                    std::cout << "Popped: " << pop() << std::endl;
+                    break;
+                case ADD: {
+                    int b = pop();
+                    int a = pop();
+                    push(a + b);
+                    break;
+                }
+                case SUB: {
+                    int b = pop();
+                    int a = pop();
+                    push(a - b);
+                    break;
+                }
+                case HALT:
+                    std::cout << "Program halted." << std::endl;
+                    return;
+                default:
+                    throw std::runtime_error("Unknown instruction!");
+            }
+        }
+    }
+};
+
+int main() {
+    StackVM vm;
+    std::vector<int> program = {
+        PUSH, 10,
+        PUSH, 20,
+        ADD,
+        PUSH, 5,
+        SUB,
+        POP,
+        HALT
+    };
+
+    try {
+        vm.execute(program);
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+
+    return 0;
+}
