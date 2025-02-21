@@ -1,0 +1,85 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cmath>
+#include <limits>
+
+using namespace std;
+
+// Song structure
+struct Song {
+    string title;
+    string genre;
+    string mood;
+    int tempo; // Tempo in BPM (Beats Per Minute)
+};
+
+// Function to calculate similarity score
+double calculateSimilarity(const Song& song, const string& preferredGenre, const string& preferredMood, int preferredTempo) {
+    double score = 0.0;
+
+    // Genre match
+    if (song.genre == preferredGenre) {
+        score += 3.0;
+    }
+
+    // Mood match
+    if (song.mood == preferredMood) {
+        score += 2.0;
+    }
+
+    // Tempo similarity
+    score += 1.0 / (1 + abs(song.tempo - preferredTempo));
+
+    return score;
+}
+
+// Recommend the best-matching song
+void recommendSong(const vector<Song>& songs, const string& preferredGenre, const string& preferredMood, int preferredTempo) {
+    double bestScore = -1.0;
+    Song bestMatch;
+
+    for (const auto& song : songs) {
+        double score = calculateSimilarity(song, preferredGenre, preferredMood, preferredTempo);
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = song;
+        }
+    }
+
+    if (bestScore > 0) {
+        cout << "Recommended Song: " << bestMatch.title << " (Genre: " << bestMatch.genre 
+             << ", Mood: " << bestMatch.mood << ", Tempo: " << bestMatch.tempo << " BPM)\n";
+    } else {
+        cout << "No suitable song found based on your preferences.\n";
+    }
+}
+
+int main() {
+    // Song database
+    vector<Song> songs = {
+        {"Blinding Lights", "Pop", "Energetic", 171},
+        {"Someone Like You", "Pop", "Sad", 135},
+        {"Bohemian Rhapsody", "Rock", "Dramatic", 144},
+        {"Lose Yourself", "Hip-Hop", "Intense", 170},
+        {"Chill Vibes", "Lo-fi", "Relaxed", 90}
+    };
+
+    // User preferences input
+    string preferredGenre, preferredMood;
+    int preferredTempo;
+
+    cout << "Enter your preferred genre (Pop, Rock, Hip-Hop, Lo-fi): ";
+    cin >> preferredGenre;
+
+    cout << "Enter your preferred mood (Energetic, Sad, Dramatic, Intense, Relaxed): ";
+    cin >> preferredMood;
+
+    cout << "Enter your preferred tempo (BPM): ";
+    cin >> preferredTempo;
+
+    // Recommend a song
+    recommendSong(songs, preferredGenre, preferredMood, preferredTempo);
+
+    return 0;
+}
