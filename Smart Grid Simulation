@@ -1,0 +1,98 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+
+using namespace std;
+
+// Base class for power entities
+class PowerEntity {
+public:
+    virtual double getPower() const = 0;
+};
+
+// Power generator class
+class Generator : public PowerEntity {
+private:
+    double capacity; // Max capacity in MW
+public:
+    Generator(double cap) : capacity(cap) {}
+
+    double getPower() const override {
+        return capacity * (0.5 + (rand() % 50) / 100.0); // Random generation between 50% to 100%
+    }
+};
+
+// Power consumer class
+class Consumer : public PowerEntity {
+private:
+    double demand; // Demand in MW
+public:
+    Consumer(double dem) : demand(dem) {}
+
+    double getPower() const override {
+        return demand;
+    }
+};
+
+// Smart grid management
+class SmartGrid {
+private:
+    vector<Generator> generators;
+    vector<Consumer> consumers;
+
+public:
+    void addGenerator(double capacity) {
+        generators.emplace_back(capacity);
+    }
+
+    void addConsumer(double demand) {
+        consumers.emplace_back(demand);
+    }
+
+    void balanceLoad() {
+        double totalGenerated = 0, totalDemand = 0;
+
+        for (const auto& gen : generators) {
+            totalGenerated += gen.getPower();
+        }
+
+        for (const auto& cons : consumers) {
+            totalDemand += cons.getPower();
+        }
+
+        cout << "Total Generated Power: " << totalGenerated << " MW\n";
+        cout << "Total Demand: " << totalDemand << " MW\n";
+
+        if (totalGenerated >= totalDemand) {
+            cout << "Status: Power supply is sufficient.\n";
+        } else {
+            cout << "Status: Power shortage detected!\n";
+        }
+        cout << "----------------------------\n";
+    }
+};
+
+int main() {
+    srand(time(0)); // Seed for random generation
+
+    SmartGrid grid;
+
+    // Add generators
+    grid.addGenerator(100); // 100 MW capacity
+    grid.addGenerator(200); // 200 MW capacity
+    grid.addGenerator(50);  // 50 MW capacity (small solar plant)
+
+    // Add consumers
+    grid.addConsumer(80);  // 80 MW demand
+    grid.addConsumer(150); // 150 MW demand
+    grid.addConsumer(120); // 120 MW demand
+
+    // Simulate for 5 cycles
+    for (int i = 0; i < 5; i++) {
+        cout << "Cycle " << i + 1 << ":\n";
+        grid.balanceLoad();
+    }
+
+    return 0;
+}
