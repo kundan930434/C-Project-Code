@@ -1,0 +1,146 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cctype>
+#include <unordered_map>
+
+// Token types
+enum TokenType {
+    TOKEN_NUMBER,
+    TOKEN_PLUS,
+    TOKEN_MINUS,
+    TOKEN_MULTIPLY,
+    TOKEN_DIVIDE,
+    TOKEN_LET,
+    TOKEN_IDENTIFIER,
+    TOKEN_ASSIGN,
+    TOKEN_PRINT,
+    TOKEN_SEMICOLON,
+    TOKEN_EOF,
+    TOKEN_UNKNOWN
+};
+
+// Token structure
+struct Token {
+    TokenType type;
+    std::string value;
+};
+
+// Lexer class: Converts source code to tokens
+class Lexer {
+private:
+    std::string source;
+    size_t position;
+
+public:
+    Lexer(const std::string& src) : source(src), position(0) {}
+
+    char peek() {
+        return position < source.size() ? source[position] : '\0';
+    }
+
+    char advance() {
+        return position < source.size() ? source[position++] : '\0';
+    }
+
+    Token nextToken() {
+        while (isspace(peek())) advance();
+
+        if (isdigit(peek())) {
+            std::string num;
+            while (isdigit(peek())) {
+                num += advance();
+            }
+            return {TOKEN_NUMBER, num};
+        }
+
+        if (isalpha(peek())) {
+            std::string id;
+            while (isalnum(peek())) {
+                id += advance();
+            }
+            if (id == "let") return {TOKEN_LET, id};
+            if (id == "print") return {TOKEN_PRINT, id};
+            return {TOKEN_IDENTIFIER, id};
+        }
+
+        char c = advance();
+        switch (c) {
+            case '+': return {TOKEN_PLUS, "+"};
+            case '-': return {TOKEN_MINUS, "-"};
+            case '*': return {TOKEN_MULTIPLY, "*"};
+            case '/': return {TOKEN_DIVIDE, "/"};
+            case '=': return {TOKEN_ASSIGN, "="};
+            case ';': return {TOKEN_SEMICOLON, ";"};
+            case '\0': return {TOKEN_EOF, ""};
+            default: return {TOKEN_UNKNOWN, std::string(1, c)};
+        }
+    }
+};
+
+// Simple interpreter (Executor)
+class Interpreter {
+private:
+    Lexer lexer;
+    Token currentToken;
+    std::unordered_map<std::string, int> variables;
+
+    void eat(TokenType type) {
+        if (currentToken.type == type) {
+            currentToken = lexer.nextToken();
+        } else {
+            std::cerr << "Syntax Error: Unexpected token '" << currentToken.value << "'\n";
+            exit(1);
+        }
+    }
+
+    int expression() {
+        int result = std::stoi(currentToken.value);
+        eat(TOKEN_NUMBER);
+
+        while (currentToken.type == TOKEN_PLUS || currentToken.type == TOKEN_MINUS) {
+            TokenType op = currentToken.type;
+            eat(op);
+            int right = std::stoi(currentToken.value);
+            eat(TOKEN_NUMBER);
+
+            if (op == TOKEN_PLUS) result += right;
+            else if (op == TOKEN_MINUS) result -= right;
+        }
+
+        return result;
+    }
+
+public:
+    Interpreter(const std::string& src) : lexer(src), currentToken(lexer.nextToken()) {}
+
+    void run() {
+        while (currentToken.type != TOKEN_EOF) {
+            if (currentToken.type == TOKEN_LET) {
+                eat(TOKEN_LET);
+                std::string varName = currentToken.value;
+                eat(TOKEN_IDENTIFIER);
+                eat(TOKEN_ASSIGN);
+                int value = expression();
+                variables[varName] = value;
+                eat(TOKEN_SEMICOLON);
+            } else if (currentToken.type == TOKEN_PRINT) {
+                eat(TOKEN_PRINT);
+                std::string varName = currentToken.value;
+                eat(TOKEN_IDENTIFIER);
+                eat(TOKEN_SEMICOLON);
+                std::cout << varName << " = " << variables[varName] << "\n";
+            } else {
+                std::cerr << "Syntax Error: Invalid statement\n";
+                exit(1);
+            }
+        }
+    }
+};
+
+int main() {
+    std::string code = "let x = 5 + 3;\nprint x;";
+    Interpreter interpreter(code);
+    interpreter.run();
+    return 0;
+}
