@@ -1,0 +1,76 @@
+#include <iostream>
+#include <unordered_map>
+#include <fstream>
+#include <string>
+
+class Database {
+private:
+    std::unordered_map<std::string, std::string> data;
+
+public:
+    // Insert key-value pair
+    void insert(const std::string& key, const std::string& value) {
+        data[key] = value;
+    }
+
+    // Retrieve value by key
+    std::string get(const std::string& key) {
+        if (data.find(key) != data.end()) {
+            return data[key];
+        } else {
+            return "Key not found";
+        }
+    }
+
+    // Delete key-value pair
+    void remove(const std::string& key) {
+        if (data.erase(key)) {
+            std::cout << "Key '" << key << "' deleted successfully.\n";
+        } else {
+            std::cout << "Key not found.\n";
+        }
+    }
+
+    // Save database to file
+    void saveToFile(const std::string& filename) {
+        std::ofstream file(filename);
+        for (const auto& pair : data) {
+            file << pair.first << "=" << pair.second << "\n";
+        }
+        file.close();
+    }
+
+    // Load database from file
+    void loadFromFile(const std::string& filename) {
+        std::ifstream file(filename);
+        std::string line;
+        while (getline(file, line)) {
+            size_t delimiterPos = line.find('=');
+            if (delimiterPos != std::string::npos) {
+                std::string key = line.substr(0, delimiterPos);
+                std::string value = line.substr(delimiterPos + 1);
+                data[key] = value;
+            }
+        }
+        file.close();
+    }
+};
+
+int main() {
+    Database db;
+    db.insert("name", "CustomDB");
+    db.insert("version", "1.0");
+
+    std::cout << "Key: name, Value: " << db.get("name") << "\n";
+    
+    db.remove("version");
+    std::cout << "Key: version, Value: " << db.get("version") << "\n";
+
+    db.saveToFile("database.txt");
+    
+    Database newDB;
+    newDB.loadFromFile("database.txt");
+    std::cout << "Loaded from file -> Key: name, Value: " << newDB.get("name") << "\n";
+
+    return 0;
+}
