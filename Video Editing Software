@@ -1,0 +1,55 @@
+#include <opencv2/opencv.hpp>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+
+// Function to apply a grayscale filter
+Mat applyGrayscale(const Mat& frame) {
+    Mat gray;
+    cvtColor(frame, gray, COLOR_BGR2GRAY);
+    return gray;
+}
+
+// Function to trim the video between start and end frames
+void trimVideo(VideoCapture& cap, int startFrame, int endFrame, const string& outputFile) {
+    int fps = cap.get(CAP_PROP_FPS);
+    Size frameSize(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
+    VideoWriter writer(outputFile, VideoWriter::fourcc('M', 'J', 'P', 'G'), fps, frameSize, true);
+
+    if (!writer.isOpened()) {
+        cerr << "Could not open the output video file!" << endl;
+        return;
+    }
+
+    cap.set(CAP_PROP_POS_FRAMES, startFrame);
+    for (int i = startFrame; i <= endFrame; i++) {
+        Mat frame;
+        if (!cap.read(frame)) break;
+
+        Mat editedFrame = applyGrayscale(frame);
+        writer.write(editedFrame);
+    }
+
+    cout << "Video trimmed and saved to " << outputFile << endl;
+}
+
+int main() {
+    string inputFile = "input_video.mp4";
+    VideoCapture cap(inputFile);
+
+    if (!cap.isOpened()) {
+        cerr << "Error opening video file!" << endl;
+        return -1;
+    }
+
+    int totalFrames = cap.get(CAP_PROP_FRAME_COUNT);
+    cout << "Total Frames: " << totalFrames << endl;
+
+    // Example: Trim from frame 100 to 300 and apply grayscale filter
+    trimVideo(cap, 100, 300, "output_video.avi");
+
+    cap.release();
+    return 0;
+}
+
