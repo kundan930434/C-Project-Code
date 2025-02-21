@@ -1,0 +1,47 @@
+#include <iostream>
+#include <pcap.h>
+#include <netinet/ip.h>
+#include <arpa/inet.h>
+#include <unordered_set>
+
+using namespace std;
+
+// Suspicious IP addresses
+unordered_set<string> blacklist = {
+    "192.168.1.100", // Example IPs
+    "10.0.0.5"
+};
+
+// Packet handler function
+void packetHandler(u_char* userData, const struct pcap_pkthdr* pkthdr, const u_char* packet) {
+    struct ip* ipHeader = (struct ip*)(packet + 14); // Skip Ethernet header
+
+    string srcIP = inet_ntoa(ipHeader->ip_src);
+    string dstIP = inet_ntoa(ipHeader->ip_dst);
+
+    cout << "Packet captured from " << srcIP << " to " << dstIP << endl;
+
+    // Check if the source or destination IP is blacklisted
+    if (blacklist.find(srcIP) != blacklist.end() || blacklist.find(dstIP) != blacklist.end()) {
+        cout << "[ALERT] Suspicious activity detected from " << srcIP << " to " << dstIP << endl;
+    }
+}
+
+int main() {
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_t* handle = pcap_open_live("en0", BUFSIZ, 1, 1000, errbuf); // Replace "en0" with your interface
+
+    if (handle == nullptr) {
+        cerr << "Could not open device: " << errbuf << endl;
+        return 1;
+    }
+
+    // Capture packets indefinitely
+    if (pcap_loop(handle, 0, packetHandler, nullptr) < 0) {
+        cerr << "Error capturing packets: " << pcap_geterr(handle) << endl;
+        return 1;
+    }
+
+    pcap_close(handle);
+    return 0;
+}
