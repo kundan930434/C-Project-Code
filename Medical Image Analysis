@@ -1,0 +1,46 @@
+#include <opencv2/opencv.hpp>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+
+// Function to perform edge detection
+Mat detectEdges(const Mat& image) {
+    Mat gray, edges;
+    cvtColor(image, gray, COLOR_BGR2GRAY); // Convert to grayscale
+    GaussianBlur(gray, gray, Size(5, 5), 1.5); // Smooth the image
+    Canny(gray, edges, 100, 200); // Canny edge detection
+    return edges;
+}
+
+// Function to highlight regions of interest (ROI)
+Mat highlightROI(const Mat& image) {
+    Mat result = image.clone();
+    Rect roi(50, 50, 200, 200); // Example ROI region
+    rectangle(result, roi, Scalar(0, 255, 0), 2); // Draw rectangle
+    return result;
+}
+
+int main() {
+    string filename = "medical_image.jpg";
+    Mat image = imread(filename);
+
+    if (image.empty()) {
+        cerr << "Failed to load the image!" << endl;
+        return -1;
+    }
+
+    // Perform edge detection
+    Mat edges = detectEdges(image);
+
+    // Highlight regions of interest
+    Mat roiHighlighted = highlightROI(image);
+
+    // Display results
+    imshow("Original Image", image);
+    imshow("Edge Detection", edges);
+    imshow("ROI Highlighted", roiHighlighted);
+
+    waitKey(0);
+    return 0;
+}
