@@ -1,0 +1,89 @@
+#include <iostream>
+#include <sstream>
+#include <unordered_map>
+#include <vector>
+#include <algorithm>
+#include <cctype>
+
+// Helper function to convert a string to lowercase
+std::string toLower(const std::string& str) {
+    std::string result;
+    for (char ch : str) {
+        result += std::tolower(ch);
+    }
+    return result;
+}
+
+// Tokenize text into sentences based on periods
+std::vector<std::string> splitIntoSentences(const std::string& text) {
+    std::vector<std::string> sentences;
+    std::stringstream ss(text);
+    std::string sentence;
+    while (std::getline(ss, sentence, '.')) {
+        if (!sentence.empty()) {
+            sentences.push_back(sentence + ".");
+        }
+    }
+    return sentences;
+}
+
+// Tokenize sentences into words and count their frequencies
+std::unordered_map<std::string, int> countWordFrequencies(const std::string& text) {
+    std::unordered_map<std::string, int> frequencies;
+    std::stringstream ss(toLower(text));
+    std::string word;
+    while (ss >> word) {
+        // Remove punctuation
+        word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+        frequencies[word]++;
+    }
+    return frequencies;
+}
+
+// Score sentences based on word frequencies
+std::vector<std::pair<std::string, int>> scoreSentences(
+    const std::vector<std::string>& sentences,
+    const std::unordered_map<std::string, int>& frequencies) {
+
+    std::vector<std::pair<std::string, int>> scoredSentences;
+
+    for (const auto& sentence : sentences) {
+        int score = 0;
+        std::stringstream ss(toLower(sentence));
+        std::string word;
+        while (ss >> word) {
+            word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+            score += frequencies.at(word);
+        }
+        scoredSentences.push_back({sentence, score});
+    }
+
+    return scoredSentences;
+}
+
+// Generate summary by selecting top N sentences
+std::string generateSummary(const std::string& text, int topN) {
+    auto sentences = splitIntoSentences(text);
+    auto frequencies = countWordFrequencies(text);
+    auto scoredSentences = scoreSentences(sentences, frequencies);
+
+    // Sort sentences by score in descending order
+    std::sort(scoredSentences.begin(), scoredSentences.end(),
+              [](auto& a, auto& b) { return a.second > b.second; });
+
+    std::string summary;
+    for (int i = 0; i < topN && i < scoredSentences.size(); ++i) {
+        summary += scoredSentences[i].first + " ";
+    }
+
+    return summary;
+}
+
+int main() {
+    std::string text = "Artificial intelligence (AI) is intelligence demonstrated by machines, in contrast to the natural intelligence displayed by humans and animals. Leading AI textbooks define the field as the study of intelligent agents. Any device that perceives its environment and takes actions that maximize its chance of successfully achieving its goals can be considered AI.";
+    
+    std::string summary = generateSummary(text, 2);
+    std::cout << "Summary:\n" << summary << std::endl;
+
+    return 0;
+}
