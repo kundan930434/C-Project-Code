@@ -1,0 +1,58 @@
+#include <iostream>
+#include <unordered_set>
+#include <sstream>
+#include <algorithm>
+#include <cctype>
+
+using namespace std;
+
+// Define positive and negative words
+unordered_set<string> positiveWords = {"good", "happy", "excellent", "fantastic", "great", "love", "wonderful"};
+unordered_set<string> negativeWords = {"bad", "sad", "terrible", "awful", "hate", "poor", "horrible"};
+
+// Function to convert a string to lowercase
+string toLower(const string& input) {
+    string result = input;
+    transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
+}
+
+// Function to analyze sentiment
+string analyzeSentiment(const string& text) {
+    istringstream stream(text);
+    string word;
+    int score = 0;
+
+    while (stream >> word) {
+        word = toLower(word);
+
+        // Remove punctuation
+        word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+
+        if (positiveWords.count(word)) {
+            score++;
+        } else if (negativeWords.count(word)) {
+            score--;
+        }
+    }
+
+    if (score > 0) {
+        return "Positive";
+    } else if (score < 0) {
+        return "Negative";
+    } else {
+        return "Neutral";
+    }
+}
+
+int main() {
+    string inputText;
+
+    cout << "Enter a sentence for sentiment analysis: ";
+    getline(cin, inputText);
+
+    string sentiment = analyzeSentiment(inputText);
+    cout << "The sentiment of the text is: " << sentiment << endl;
+
+    return 0;
+}
