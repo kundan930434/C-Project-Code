@@ -1,0 +1,82 @@
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+// Base class for users
+class User {
+protected:
+    string name;
+public:
+    User(const string& username) : name(username) {}
+    virtual void sendMessage(const string& message) = 0;
+    string getName() const { return name; }
+};
+
+// Student class
+class Student : public User {
+public:
+    Student(const string& username) : User(username) {}
+
+    void sendMessage(const string& message) override {
+        cout << "[Student] " << name << ": " << message << endl;
+    }
+};
+
+// Teacher class
+class Teacher : public User {
+public:
+    Teacher(const string& username) : User(username) {}
+
+    void sendMessage(const string& message) override {
+        cout << "[Teacher] " << name << ": " << message << endl;
+    }
+};
+
+// Virtual classroom class
+class VirtualClassroom {
+private:
+    Teacher* teacher;
+    vector<Student> students;
+
+public:
+    VirtualClassroom(Teacher* t) : teacher(t) {}
+
+    void addStudent(const string& studentName) {
+        students.emplace_back(studentName);
+        cout << studentName << " has joined the class.\n";
+    }
+
+    void showAttendance() {
+        cout << "\nAttendance:\n";
+        cout << "Teacher: " << teacher->getName() << "\n";
+        for (const auto& student : students) {
+            cout << "- " << student.getName() << "\n";
+        }
+        cout << "--------------------------\n";
+    }
+
+    void broadcastMessage(const string& sender, const string& message) {
+        cout << sender << " says: " << message << endl;
+    }
+};
+
+// Main function to simulate the classroom
+int main() {
+    Teacher teacher("Dr. Smith");
+    VirtualClassroom classroom(&teacher);
+
+    classroom.addStudent("Alice");
+    classroom.addStudent("Bob");
+    classroom.addStudent("Charlie");
+
+    classroom.showAttendance();
+
+    // Messaging simulation
+    teacher.sendMessage("Welcome to today's class!");
+    classroom.broadcastMessage("Alice", "Good morning, everyone!");
+    classroom.broadcastMessage("Bob", "Excited for the lesson!");
+
+    return 0;
+}
