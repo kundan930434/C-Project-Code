@@ -1,0 +1,66 @@
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <thread>
+#include <cstring>
+#include <netinet/in.h>
+#include <unistd.h>
+
+#define PORT 8080
+
+void handleClient(int clientSocket) {
+    char buffer[1024] = {0};
+    read(clientSocket, buffer, 1024);
+    std::cout << "Received:\n" << buffer << std::endl;
+
+    std::string httpResponse =
+        "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+        "<html><body><h1>Welcome to the C++ HTTP Server!</h1></body></html>\r\n";
+
+    send(clientSocket, httpResponse.c_str(), httpResponse.size(), 0);
+    close(clientSocket);
+}
+
+int main() {
+    int serverFd, clientSocket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+
+    serverFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverFd == 0) {
+        perror("Socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(serverFd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(serverFd, 3) < 0) {
+        perror("Listen failed");
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Server running on port " << PORT << "...\n";
+
+    while (true) {
+        clientSocket = accept(serverFd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
+        if (clientSocket < 0) {
+            perror("Accept failed");
+            exit(EXIT_FAILURE);
+        }
+        std::thread clientThread(handleClient, clientSocket);
+        clientThread.detach();
+    }
+
+    close(serverFd);
+    return 0;
+}
