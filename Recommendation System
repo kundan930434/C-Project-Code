@@ -1,0 +1,73 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <unordered_map>
+
+using namespace std;
+
+class RecommendationSystem {
+private:
+    vector<vector<double>> userItemMatrix; // User-Item ratings
+
+    // Calculate cosine similarity between two users
+    double cosineSimilarity(const vector<double>& userA, const vector<double>& userB) {
+        double dotProduct = 0, normA = 0, normB = 0;
+        for (size_t i = 0; i < userA.size(); i++) {
+            dotProduct += userA[i] * userB[i];
+            normA += userA[i] * userA[i];
+            normB += userB[i] * userB[i];
+        }
+        return dotProduct / (sqrt(normA) * sqrt(normB) + 1e-5);
+    }
+
+public:
+    RecommendationSystem(int users, int items) {
+        userItemMatrix.resize(users, vector<double>(items, 0));
+    }
+
+    // Add a rating to the matrix
+    void addRating(int user, int item, double rating) {
+        userItemMatrix[user][item] = rating;
+    }
+
+    // Generate recommendations for a user
+    void recommend(int userId) {
+        unordered_map<int, double> scores;
+
+        for (int otherUser = 0; otherUser < userItemMatrix.size(); ++otherUser) {
+            if (otherUser == userId) continue;
+
+            double similarity = cosineSimilarity(userItemMatrix[userId], userItemMatrix[otherUser]);
+            for (int item = 0; item < userItemMatrix[otherUser].size(); ++item) {
+                if (userItemMatrix[userId][item] == 0) {
+                    scores[item] += userItemMatrix[otherUser][item] * similarity;
+                }
+            }
+        }
+
+        // Recommend items with the highest scores
+        cout << "Recommendations for User " << userId << ":" << endl;
+        for (const auto& score : scores) {
+            cout << "Item " << score.first << " -> Score: " << score.second << endl;
+        }
+    }
+};
+
+int main() {
+    RecommendationSystem rs(4, 5); // 4 users, 5 items
+
+    // Add user-item ratings
+    rs.addRating(0, 0, 5);
+    rs.addRating(0, 1, 3);
+    rs.addRating(1, 0, 4);
+    rs.addRating(1, 2, 2);
+    rs.addRating(2, 1, 4);
+    rs.addRating(2, 3, 5);
+    rs.addRating(3, 2, 5);
+    rs.addRating(3, 4, 3);
+
+    // Generate recommendations for User 0
+    rs.recommend(0);
+
+    return 0;
+}
