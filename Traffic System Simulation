@@ -1,0 +1,68 @@
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <chrono>
+
+enum LightColor { RED, YELLOW, GREEN };
+
+class TrafficLight {
+public:
+    LightColor color;
+
+    TrafficLight() : color(RED) {}
+
+    void changeLight() {
+        switch (color) {
+            case RED: color = GREEN; break;
+            case GREEN: color = YELLOW; break;
+            case YELLOW: color = RED; break;
+        }
+    }
+
+    void displayLight() {
+        switch (color) {
+            case RED: std::cout << "[RED] "; break;
+            case YELLOW: std::cout << "[YELLOW] "; break;
+            case GREEN: std::cout << "[GREEN] "; break;
+        }
+    }
+};
+
+class Car {
+public:
+    int id;
+    bool moving;
+
+    Car(int id) : id(id), moving(false) {}
+
+    void move(TrafficLight& light) {
+        if (light.color == GREEN) {
+            moving = true;
+            std::cout << "Car " << id << " is moving.\n";
+        } else {
+            moving = false;
+            std::cout << "Car " << id << " is waiting.\n";
+        }
+    }
+};
+
+int main() {
+    TrafficLight light;
+    std::vector<Car> cars = { Car(1), Car(2), Car(3) };
+
+    for (int cycle = 0; cycle < 10; cycle++) {
+        std::cout << "Cycle " << cycle + 1 << ": ";
+        light.displayLight();
+        std::cout << "\n";
+
+        for (auto& car : cars) {
+            car.move(light);
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        light.changeLight();
+        std::cout << "---------------------------\n";
+    }
+
+    return 0;
+}
