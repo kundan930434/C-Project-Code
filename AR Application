@@ -1,0 +1,65 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/aruco.hpp>
+#include <GL/glut.h>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+
+VideoCapture cap(0);
+Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+
+// Function to render a simple 3D cube
+void drawCube() {
+    glColor3f(0.0, 1.0, 0.0);
+    glutWireCube(0.1);
+}
+
+// Display callback for OpenGL
+void display() {
+    Mat frame;
+    cap >> frame;
+    if (frame.empty()) return;
+
+    vector<int> markerIds;
+    vector<vector<Point2f>> markerCorners;
+    aruco::detectMarkers(frame, dictionary, markerCorners, markerIds);
+
+    // Show the camera feed
+    imshow("AR Application", frame);
+
+    // Render AR content
+    if (!markerIds.empty()) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glLoadIdentity();
+
+        for (const auto& corners : markerCorners) {
+            drawCube();
+        }
+
+        glutSwapBuffers();
+    }
+
+    waitKey(1);
+}
+
+// OpenGL initialization
+void initOpenGL() {
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutCreateWindow("AR Cube");
+    glutDisplayFunc(display);
+    glEnable(GL_DEPTH_TEST);
+}
+
+int main(int argc, char** argv) {
+    if (!cap.isOpened()) {
+        cerr << "Camera not found!" << endl;
+        return -1;
+    }
+
+    glutInit(&argc, argv);
+    initOpenGL();
+    glutMainLoop();
+
+    return 0;
+}
