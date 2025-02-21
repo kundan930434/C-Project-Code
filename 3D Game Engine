@@ -1,0 +1,78 @@
+#include <iostream>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+class GameEngine {
+public:
+    GLFWwindow* window;
+    int width = 800;
+    int height = 600;
+    const char* title = "Basic 3D Game Engine";
+
+    bool init() {
+        if (!glfwInit()) {
+            std::cerr << "Failed to initialize GLFW" << std::endl;
+            return false;
+        }
+
+        window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+        if (!window) {
+            std::cerr << "Failed to create GLFW window" << std::endl;
+            glfwTerminate();
+            return false;
+        }
+        glfwMakeContextCurrent(window);
+
+        if (glewInit() != GLEW_OK) {
+            std::cerr << "Failed to initialize GLEW" << std::endl;
+            return false;
+        }
+
+        glEnable(GL_DEPTH_TEST);
+        return true;
+    }
+
+    void run() {
+        while (!glfwWindowShouldClose(window)) {
+            processInput();
+            update();
+            render();
+        }
+        cleanup();
+    }
+
+private:
+    void processInput() {
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, true);
+    }
+
+    void update() {
+        // Game logic goes here
+    }
+
+    void render() {
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Rendering code goes here
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    void cleanup() {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+    }
+};
+
+int main() {
+    GameEngine engine;
+    if (!engine.init()) return -1;
+    engine.run();
+    return 0;
+}
