@@ -1,0 +1,70 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+struct Position {
+    double x, y;
+};
+
+struct Obstacle {
+    Position position;
+    double radius;
+};
+
+class Car {
+public:
+    Position pos;
+    double speed;
+    double angle; // in degrees
+
+    Car(double x = 0, double y = 0) : pos{x, y}, speed(0), angle(0) {}
+
+    void accelerate(double amount) {
+        speed += amount;
+    }
+
+    void steer(double angleChange) {
+        angle += angleChange;
+    }
+
+    void update() {
+        pos.x += speed * cos(angle * M_PI / 180.0);
+        pos.y += speed * sin(angle * M_PI / 180.0);
+    }
+
+    bool detectObstacle(const Obstacle& obstacle) {
+        double distance = sqrt(pow(pos.x - obstacle.position.x, 2) + pow(pos.y - obstacle.position.y, 2));
+        return distance < obstacle.radius + 2; // Detection radius
+    }
+};
+
+void simulate(Car& car, vector<Obstacle>& obstacles) {
+    for (int i = 0; i < 100; i++) {
+        car.accelerate(0.1);
+        car.update();
+
+        for (const auto& obstacle : obstacles) {
+            if (car.detectObstacle(obstacle)) {
+                cout << "Obstacle detected! Steering away..." << endl;
+                car.steer(30);
+            }
+        }
+
+        // Display car's position
+        cout << "Car position: (" << car.pos.x << ", " << car.pos.y << ")" << endl;
+    }
+}
+
+int main() {
+    Car car;
+    vector<Obstacle> obstacles = {
+        {{50, 50}, 5},
+        {{100, 100}, 10}
+    };
+
+    simulate(car, obstacles);
+
+    return 0;
+}
