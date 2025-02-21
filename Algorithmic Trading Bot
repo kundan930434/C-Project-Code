@@ -1,0 +1,58 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <numeric>
+
+using namespace std;
+
+double calculateSMA(const vector<double>& prices, int period) {
+    if (prices.size() < period) return 0.0;
+    double sum = accumulate(prices.end() - period, prices.end(), 0.0);
+    return sum / period;
+}
+
+double getNextPrice(double lastPrice) {
+    double change = (rand() % 200 - 100) / 1000.0;  // Random change between -0.1 and 0.1
+    return lastPrice + change;
+}
+
+int main() {
+    srand(time(0));
+
+    vector<double> prices;
+    double balance = 10000.0;  // Starting balance
+    double position = 0.0;     // Holding stock amount
+    double lastPrice = 100.0;  // Initial stock price
+    int shortPeriod = 5;
+    int longPeriod = 20;
+
+    for (int t = 0; t < 100; ++t) {  // Simulate 100 time steps
+        lastPrice = getNextPrice(lastPrice);
+        prices.push_back(lastPrice);
+
+        double shortSMA = calculateSMA(prices, shortPeriod);
+        double longSMA = calculateSMA(prices, longPeriod);
+
+        cout << "Price: " << lastPrice << ", Short SMA: " << shortSMA << ", Long SMA: " << longSMA << endl;
+
+        
+        if (shortSMA > longSMA && position == 0.0) {
+            // Buy signal
+            position = balance / lastPrice;
+            balance = 0.0;
+            cout << "Bought at: " << lastPrice << endl;
+        } else if (shortSMA < longSMA && position > 0.0) {
+        
+            balance = position * lastPrice;
+            position = 0.0;
+            cout << "Sold at: " << lastPrice << " | Balance: " << balance << endl;
+        }
+    }
+    if (position > 0.0) {
+        balance = position * lastPrice;
+    }
+    cout << "\nFinal Portfolio Value: " << balance << endl;
+
+    return 0;
+}
