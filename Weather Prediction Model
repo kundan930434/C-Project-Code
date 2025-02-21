@@ -1,0 +1,49 @@
+#include <iostream>
+#include <vector>
+#include <numeric>
+
+using namespace std;
+
+// Function to calculate the mean of a vector
+double mean(const vector<double>& data) {
+    return accumulate(data.begin(), data.end(), 0.0) / data.size();
+}
+
+// Linear regression function (y = mx + b)
+pair<double, double> linearRegression(const vector<double>& x, const vector<double>& y) {
+    double x_mean = mean(x);
+    double y_mean = mean(y);
+    
+    double numerator = 0.0, denominator = 0.0;
+    for (size_t i = 0; i < x.size(); i++) {
+        numerator += (x[i] - x_mean) * (y[i] - y_mean);
+        denominator += (x[i] - x_mean) * (x[i] - x_mean);
+    }
+
+    double m = numerator / denominator;
+    double b = y_mean - m * x_mean;
+
+    return {m, b};
+}
+
+// Predict future temperature
+double predict(double m, double b, double x) {
+    return m * x + b;
+}
+
+int main() {
+    // Example historical data (days, temperatures)
+    vector<double> days = {1, 2, 3, 4, 5, 6, 7};
+    vector<double> temperatures = {20.5, 21.0, 21.5, 22.0, 22.5, 23.0, 23.5};
+
+    // Perform linear regression
+    auto [m, b] = linearRegression(days, temperatures);
+
+    // Predict temperature for the next day
+    double nextDay = 8;
+    double predictedTemp = predict(m, b, nextDay);
+
+    cout << "Predicted temperature for day " << nextDay << " is: " << predictedTemp << "°C" << endl;
+
+    return 0;
+}
