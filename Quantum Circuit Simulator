@@ -1,0 +1,57 @@
+#include <iostream>
+#include <complex>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+using Complex = complex<double>;
+using QubitState = vector<Complex>;
+
+// Quantum Gates
+QubitState applyHadamard(const QubitState& state) {
+    QubitState newState(2);
+    double invSqrt2 = 1.0 / sqrt(2);
+    newState[0] = invSqrt2 * (state[0] + state[1]);
+    newState[1] = invSqrt2 * (state[0] - state[1]);
+    return newState;
+}
+
+QubitState applyPauliX(const QubitState& state) {
+    return { state[1], state[0] };  // Swap |0> and |1>
+}
+
+QubitState applyIdentity(const QubitState& state) {
+    return state;  // No change
+}
+
+// Measure the qubit state
+void measureQubit(const QubitState& state) {
+    double prob0 = norm(state[0]);
+    double prob1 = norm(state[1]);
+    cout << "Probability of |0⟩: " << prob0 << endl;
+    cout << "Probability of |1⟩: " << prob1 << endl;
+}
+
+int main() {
+    // Initial state |0⟩
+    QubitState qubit = { 1.0, 0.0 };
+
+    cout << "Initial state |0⟩" << endl;
+    measureQubit(qubit);
+
+    // Apply gates
+    qubit = applyHadamard(qubit);
+    cout << "\nAfter applying Hadamard gate:" << endl;
+    measureQubit(qubit);
+
+    qubit = applyPauliX(qubit);
+    cout << "\nAfter applying Pauli-X gate:" << endl;
+    measureQubit(qubit);
+
+    qubit = applyIdentity(qubit);
+    cout << "\nAfter applying Identity gate:" << endl;
+    measureQubit(qubit);
+
+    return 0;
+}
