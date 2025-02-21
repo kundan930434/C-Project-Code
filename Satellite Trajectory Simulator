@@ -1,0 +1,87 @@
+#include <iostream>
+#include <cmath>
+#include <vector>
+
+using namespace std;
+
+// Constants
+const double G = 6.67430e-11; // Gravitational constant (m^3 kg^-1 s^-2)
+const double EarthMass = 5.972e24; // Mass of Earth (kg)
+const double EarthRadius = 6.371e6; // Radius of Earth (m)
+const double TimeStep = 1.0; // Time step for simulation (seconds)
+
+// Structure for 2D vector
+struct Vector2D {
+    double x, y;
+
+    Vector2D operator+(const Vector2D& other) const {
+        return {x + other.x, y + other.y};
+    }
+
+    Vector2D operator*(double scalar) const {
+        return {x * scalar, y * scalar};
+    }
+
+    double magnitude() const {
+        return sqrt(x * x + y * y);
+    }
+};
+
+// Class for Satellite
+class Satellite {
+public:
+    Vector2D position;
+    Vector2D velocity;
+
+    Satellite(Vector2D pos, Vector2D vel) : position(pos), velocity(vel) {}
+
+    // Calculate gravitational acceleration towards Earth
+    Vector2D gravityAcceleration() {
+        double distance = position.magnitude();
+        double force = -G * EarthMass / (distance * distance);
+        return {force * position.x / distance, force * position.y / distance};
+    }
+
+    // Update position and velocity
+    void update() {
+        Vector2D acceleration = gravityAcceleration();
+        velocity = velocity + acceleration * TimeStep;
+        position = position + velocity * TimeStep;
+    }
+
+    // Check if satellite has crashed into Earth
+    bool hasCrashed() {
+        return position.magnitude() <= EarthRadius;
+    }
+};
+
+// Run the simulation
+void simulate(Satellite& satellite, int steps) {
+    for (int i = 0; i < steps; i++) {
+        satellite.update();
+
+        if (satellite.hasCrashed()) {
+            cout << "Satellite has crashed into Earth at step " << i << endl;
+            return;
+        }
+
+        // Output satellite position every 100 steps
+        if (i % 100 == 0) {
+            cout << "Step " << i << ": Position ("
+                 << satellite.position.x << ", "
+                 << satellite.position.y << ")" << endl;
+        }
+    }
+}
+
+int main() {
+    // Initial position (7000 km from Earth's center)
+    Vector2D initialPosition = {7.0e6, 0};
+    // Initial velocity (circular orbit speed)
+    Vector2D initialVelocity = {0, 7500};
+
+    Satellite satellite(initialPosition, initialVelocity);
+    simulate(satellite, 10000); // Simulate for 10,000 time steps
+
+    return 0;
+}
