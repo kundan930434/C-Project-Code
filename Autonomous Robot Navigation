@@ -1,0 +1,90 @@
+#include <iostream>
+#include <queue>
+#include <vector>
+#include <utility>
+
+const int ROWS = 10;
+const int COLS = 10;
+const char EMPTY = '.';
+const char OBSTACLE = '#';
+const char PATH = '*';
+
+struct Position {
+    int x, y;
+};
+
+// Directions for navigation: up, down, left, right
+const std::vector<Position> directions = {
+    { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }
+};
+
+bool isValid(int x, int y, const std::vector<std::vector<char>>& grid, const std::vector<std::vector<bool>>& visited) {
+    return x >= 0 && x < ROWS && y >= 0 && y < COLS && grid[x][y] != OBSTACLE && !visited[x][y];
+}
+
+bool findPath(std::vector<std::vector<char>>& grid, Position start, Position goal) {
+    std::queue<Position> q;
+    std::vector<std::vector<bool>> visited(ROWS, std::vector<bool>(COLS, false));
+    std::vector<std::vector<Position>> parent(ROWS, std::vector<Position>(COLS, {-1, -1}));
+
+    q.push(start);
+    visited[start.x][start.y] = true;
+
+    while (!q.empty()) {
+        Position current = q.front();
+        q.pop();
+
+        if (current.x == goal.x && current.y == goal.y) {
+            // Trace the path back
+            while (!(current.x == start.x && current.y == start.y)) {
+                grid[current.x][current.y] = PATH;
+                current = parent[current.x][current.y];
+            }
+            return true;
+        }
+
+        for (const auto& dir : directions) {
+            int newX = current.x + dir.x;
+            int newY = current.y + dir.y;
+
+            if (isValid(newX, newY, grid, visited)) {
+                visited[newX][newY] = true;
+                parent[newX][newY] = current;
+                q.push({newX, newY});
+            }
+        }
+    }
+    return false;
+}
+
+void printGrid(const std::vector<std::vector<char>>& grid) {
+    for (const auto& row : grid) {
+        for (char cell : row) {
+            std::cout << cell << ' ';
+        }
+        std::cout << '\n';
+    }
+}
+
+int main() {
+    std::vector<std::vector<char>> grid(ROWS, std::vector<char>(COLS, EMPTY));
+
+    // Set obstacles
+    grid[2][2] = OBSTACLE;
+    grid[2][3] = OBSTACLE;
+    grid[2][4] = OBSTACLE;
+    grid[3][4] = OBSTACLE;
+    grid[4][4] = OBSTACLE;
+
+    Position start = {0, 0};
+    Position goal = {9, 9};
+
+    if (findPath(grid, start, goal)) {
+        std::cout << "Path found:\n";
+        printGrid(grid);
+    } else {
+        std::cout << "No path found!\n";
+    }
+
+    return 0;
+}
