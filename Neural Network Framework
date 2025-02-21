@@ -1,0 +1,119 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
+
+// Activation function: Sigmoid
+float sigmoid(float x) {
+    return 1.0f / (1.0f + exp(-x));
+}
+
+// Derivative of sigmoid
+float sigmoid_derivative(float x) {
+    return x * (1.0f - x);
+}
+
+class NeuralNetwork {
+public:
+    std::vector<float> input;
+    std::vector<float> hidden;
+    std::vector<float> output;
+
+    std::vector<std::vector<float>> weights_input_hidden;
+    std::vector<std::vector<float>> weights_hidden_output;
+
+    NeuralNetwork(int input_size, int hidden_size, int output_size) {
+        input.resize(input_size);
+        hidden.resize(hidden_size);
+        output.resize(output_size);
+
+        // Initialize random weights
+        srand(static_cast<unsigned>(time(0)));
+        weights_input_hidden.resize(input_size, std::vector<float>(hidden_size));
+        weights_hidden_output.resize(hidden_size, std::vector<float>(output_size));
+
+        for (auto& row : weights_input_hidden)
+            for (auto& w : row)
+                w = static_cast<float>(rand()) / RAND_MAX;
+
+        for (auto& row : weights_hidden_output)
+            for (auto& w : row)
+                w = static_cast<float>(rand()) / RAND_MAX;
+    }
+
+    void feedforward() {
+        // Input -> Hidden
+        for (int i = 0; i < hidden.size(); i++) {
+            hidden[i] = 0.0f;
+            for (int j = 0; j < input.size(); j++) {
+                hidden[i] += input[j] * weights_input_hidden[j][i];
+            }
+            hidden[i] = sigmoid(hidden[i]);
+        }
+
+        // Hidden -> Output
+        for (int i = 0; i < output.size(); i++) {
+            output[i] = 0.0f;
+            for (int j = 0; j < hidden.size(); j++) {
+                output[i] += hidden[j] * weights_hidden_output[j][i];
+            }
+            output[i] = sigmoid(output[i]);
+        }
+    }
+
+    void train(const std::vector<float>& target_output, float learning_rate) {
+        std::vector<float> output_errors(output.size());
+        for (int i = 0; i < output.size(); i++) {
+            output_errors[i] = target_output[i] - output[i];
+        }
+
+        // Backpropagation
+        for (int i = 0; i < hidden.size(); i++) {
+            for (int j = 0; j < output.size(); j++) {
+                float delta = output_errors[j] * sigmoid_derivative(output[j]);
+                weights_hidden_output[i][j] += learning_rate * hidden[i] * delta;
+            }
+        }
+
+        for (int i = 0; i < input.size(); i++) {
+            for (int j = 0; j < hidden.size(); j++) {
+                float hidden_error = 0.0f;
+                for (int k = 0; k < output.size(); k++) {
+                    hidden_error += output_errors[k] * weights_hidden_output[j][k];
+                }
+                float delta = hidden_error * sigmoid_derivative(hidden[j]);
+                weights_input_hidden[i][j] += learning_rate * input[i] * delta;
+            }
+        }
+    }
+};
+
+int main() {
+    NeuralNetwork nn(2, 2, 1); // XOR problem
+
+    std::vector<std::vector<float>> training_inputs = {
+        {0, 0}, {0, 1}, {1, 0}, {1, 1}
+    };
+
+    std::vector<std::vector<float>> training_outputs = {
+        {0}, {1}, {1}, {0}
+    };
+
+    for (int epoch = 0; epoch < 10000; epoch++) {
+        for (int i = 0; i < training_inputs.size(); i++) {
+            nn.input = training_inputs[i];
+            nn.feedforward();
+            nn.train(training_outputs[i], 0.5f);
+        }
+    }
+
+    // Test the network
+    for (auto input : training_inputs) {
+        nn.input = input;
+        nn.feedforward();
+        std::cout << "Input: " << input[0] << ", " << input[1] << " Output: " << nn.output[0] << std::endl;
+    }
+
+    return 0;
+}
